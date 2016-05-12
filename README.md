@@ -1,2 +1,2 @@
-# battleship
+# Battleship
 AP Computer Science Final Project.
