@@ -7,6 +7,7 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.lang.Math.*;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -37,6 +38,7 @@ public class Display extends JFrame implements MouseListener {
 	private int shipSelected = 0;  // default to patrol ship
 	private final int[] SHIP_LENGTHS = { 2, 3, 3, 4, 5 };
 	private final String[] SHIP_NAMES = { "Patrol", "Submarine", "Destroyer", "Battleship", "Carrier" };
+	ArrayList<Point> shipPoints = new ArrayList<Point>();
 
 	public Display(int width, int height, Player[] player) {
 		DISPLAY_WIDTH = width;    // Width, height initialized
@@ -57,20 +59,60 @@ public class Display extends JFrame implements MouseListener {
 		player[1] = new Player(grid);  // Human
 	}
 
-	public void initComputerShips() {
+	public ArrayList<Point> initComputerShips() {
 		Grid grid = new Grid();
 		// YOU MUST CHANGE THIS CODE SO THAT THE COMPUTER PLACES
 		// THE SHIPS RANDOMLY INSTEAD OF (0, 0), (1, 1), (6, 6), 
 		// (5, 7), and (0, 5)... (5 POINTS)
 
-		grid.addShip(2, new Point(0,0), true, "Patrol"); 
-		grid.addShip(3, new Point(1,1), false, "Submarine");
-		grid.addShip(3, new Point(6,6), true, "Destroyer");
-		grid.addShip(4, new Point(5,7), true, "Battleship");
-		grid.addShip(5, new Point(0,5), true, "Carrier");
+		boolean[] shipAssigned = {false, false, false, false, false};
+		Point coordinate = new Point(0, 0);
+		boolean orientation = false;
+		
+		for (int i = 0; i < shipAssigned.length; i++) {
+			while (shipAssigned[i] == false) {
+				coordinate = randomPoint();
+				orientation = randomBoolean();
+				
+				if (i == 0) {
+					shipAssigned[i] = grid.addShip(2, coordinate, orientation, "Patrol");
+				} else if (i == 1) {
+					shipAssigned[i] = grid.addShip(3, coordinate, orientation, "Submarine");
+				} else if (i == 2) {
+					shipAssigned[i] = grid.addShip(3, coordinate, orientation, "Destroyer");
+				} else if (i == 3) {
+					shipAssigned[i] = grid.addShip(4, coordinate, orientation, "Battleship");
+				} else if (i == 4) {
+					shipAssigned[i] = grid.addShip(5, coordinate, orientation, "Carrier");
+				}
+
+			}
+			shipPoints.add(coordinate);
+		}
+		
+		for (int i = 0; i < shipPoints.size(); i++) {
+			System.out.println(shipPoints.get(i));
+		}
 		
 		player[0] = new Player(grid);  // Computer
 		grid.print();  // Can see what grid looks like in console if you want
+		
+		for (int i = 0; i < grid.getShips().size(); i++) {
+			System.out.println("Placed: " + grid.getShips().get(i).getName());
+		}
+		
+		return shipPoints;
+	}
+	
+	public Point randomPoint() {
+		int randomX = (int) (Math.random() * 10);
+		int randomY = (int) (Math.random() * 10);
+		Point randomPoint = new Point(randomX, randomY);
+		return randomPoint;
+	}
+	
+	public boolean randomBoolean() {
+		return Math.random() < 0.5;
 	}
 
     // The code in BLUE, below, is a fixed version of paint() that won't flicker.
