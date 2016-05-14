@@ -18,30 +18,41 @@ import javax.swing.JOptionPane;
 // code in init() to attach those interfaces to the JComponent.
 
 public class Display extends JFrame implements MouseListener {
-	private final int DISPLAY_WIDTH;   // Note how initialization works with constants
+	private final int DISPLAY_WIDTH; // Note how initialization works with
+										// constants
 	private final int DISPLAY_HEIGHT;
 	private final int COMPUTER_X_OFFSET = 25; // 10 pixels from left
 	private final int HUMAN_X_OFFSET = 500; // 10 pixels from left
 	private final int GRID_Y_OFFSET = 40; // 10 pixels from top
 	private final int CELL_WIDTH = 36;
 	private final int CELL_HEIGHT = 36;
-	private Player[] player = new Player[2];  // player[0] = computer, player[1] = human
-	private int xClicked, yClicked;  // grid position clicked, not mouse coords
-	private int gameState;  // 0 = setup, 1 = play
-	
+	private final int MAX_X = 9;
+	private final int MAX_Y = 9;
+	private final int MIN_X = 0;
+	private final int MIN_Y = 0;
+	private Player[] player = new Player[2]; // player[0] = computer, player[1]
+												// = human
+	private int xClicked, yClicked; // grid position clicked, not mouse coords
+	private int gameState; // 0 = setup, 1 = play
+
 	private Rectangle horizontal = new Rectangle(500, 500, 150, 32);
-	private Rectangle vertical = new Rectangle(500, (int) horizontal.getY()+32, 150, 32);
+	private Rectangle vertical = new Rectangle(500, (int) horizontal.getY() + 32, 150, 32);
 	private Rectangle startRect = new Rectangle(500, 576, 150, 100);
-	private boolean horizFlag = true;  // default to horizontal placement
-	
+	private boolean horizFlag = true; // default to horizontal placement
+
 	private Rectangle patrolRect = new Rectangle(676, 500, 150, 32);
-	private int shipSelected = 0;  // default to patrol ship
+	private int shipSelected = 0; // default to patrol ship
 	private final int[] SHIP_LENGTHS = { 2, 3, 3, 4, 5 };
 	private final String[] SHIP_NAMES = { "Patrol", "Submarine", "Destroyer", "Battleship", "Carrier" };
-	ArrayList<Point> shipPoints = new ArrayList<Point>();
+
+	// variables that I created:
+	private ArrayList<Point> shipPoints = new ArrayList<Point>();
+	private int direction;
+	private int hit = 0;
+	private Point startingPosition;
 
 	public Display(int width, int height, Player[] player) {
-		DISPLAY_WIDTH = width;    // Width, height initialized
+		DISPLAY_WIDTH = width; // Width, height initialized
 		DISPLAY_HEIGHT = height;
 		init();
 	}
@@ -52,128 +63,134 @@ public class Display extends JFrame implements MouseListener {
 		initPlayers();
 		addMouseListener(this);
 	}
-	
+
 	public void initPlayers() {
-		initComputerShips();		
+		initComputerShips();
 		Grid grid = new Grid();
-		player[1] = new Player(grid);  // Human
+		player[1] = new Player(grid); // Human
 	}
 
 	public ArrayList<Point> initComputerShips() {
 		Grid grid = new Grid();
 		// YOU MUST CHANGE THIS CODE SO THAT THE COMPUTER PLACES
-		// THE SHIPS RANDOMLY INSTEAD OF (0, 0), (1, 1), (6, 6), 
+		// THE SHIPS RANDOMLY INSTEAD OF (0, 0), (1, 1), (6, 6),
 		// (5, 7), and (0, 5)... (5 POINTS)
 
-		boolean[] shipAssigned = {false, false, false, false, false};
+		boolean[] shipAssigned = { false, false, false, false, false };
 		Point coordinate = new Point(0, 0);
 		boolean orientation = false;
-		
+
 		for (int i = 0; i < shipAssigned.length; i++) {
 			while (shipAssigned[i] == false) {
 				coordinate = randomPoint();
 				orientation = randomBoolean();
-				
-				if (i == 0) {
+
+				switch (i) {
+				case 0:
 					shipAssigned[i] = grid.addShip(2, coordinate, orientation, "Patrol");
-				} else if (i == 1) {
+					break;
+				case 1:
 					shipAssigned[i] = grid.addShip(3, coordinate, orientation, "Submarine");
-				} else if (i == 2) {
+					break;
+				case 2:
 					shipAssigned[i] = grid.addShip(3, coordinate, orientation, "Destroyer");
-				} else if (i == 3) {
+					break;
+				case 3:
 					shipAssigned[i] = grid.addShip(4, coordinate, orientation, "Battleship");
-				} else if (i == 4) {
+					break;
+				case 4:
 					shipAssigned[i] = grid.addShip(5, coordinate, orientation, "Carrier");
+					break;
 				}
 
 			}
 			shipPoints.add(coordinate);
 		}
-		
-		for (int i = 0; i < shipPoints.size(); i++) {
-			System.out.println(shipPoints.get(i));
-		}
-		
-		player[0] = new Player(grid);  // Computer
-		grid.print();  // Can see what grid looks like in console if you want
-		
-		for (int i = 0; i < grid.getShips().size(); i++) {
-			System.out.println("Placed: " + grid.getShips().get(i).getName());
-		}
-		
+
+		player[0] = new Player(grid); // Computer
+		grid.print(); // Can see what grid looks like in console if you want
+
 		return shipPoints;
 	}
-	
+
 	public Point randomPoint() {
 		int randomX = (int) (Math.random() * 10);
 		int randomY = (int) (Math.random() * 10);
 		Point randomPoint = new Point(randomX, randomY);
 		return randomPoint;
 	}
-	
+
 	public boolean randomBoolean() {
 		return Math.random() < 0.5;
 	}
 
-    // The code in BLUE, below, is a fixed version of paint() that won't flicker.
-    // Please use it in your own paint() method if you are seeing flickering issues.
+	// The code in BLUE, below, is a fixed version of paint() that won't
+	// flicker.
+	// Please use it in your own paint() method if you are seeing flickering
+	// issues.
 	public void paint(Graphics g) {
-		 BufferedImage image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics gr = image.getGraphics();
-        gr.fillRect(0, 0, getWidth(), getHeight());
-        Font f1 = new Font("Monospaced", Font.BOLD, 24);
-        gr.setFont(f1);
-        gr.setColor(Color.WHITE);
-        gr.fillRect(0, 0, getWidth(), getHeight());
-        gr.setColor(Color.BLACK);
-        showBoard(gr, 0);
-        showBoard(gr, 1);
-        if (gameState == 0) {
-        	showShipPlacementButtons(gr);
-        }
-        super.paint(g);
-        g.drawImage(image, 0, 0, null);
+		BufferedImage image = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
+		Graphics gr = image.getGraphics();
+		gr.fillRect(0, 0, getWidth(), getHeight());
+		Font f1 = new Font("Monospaced", Font.BOLD, 24);
+		gr.setFont(f1);
+		gr.setColor(Color.WHITE);
+		gr.fillRect(0, 0, getWidth(), getHeight());
+		gr.setColor(Color.BLACK);
+		showBoard(gr, 0);
+		showBoard(gr, 1);
+		if (gameState == 0) {
+			showShipPlacementButtons(gr);
+		}
+		super.paint(g);
+		g.drawImage(image, 0, 0, null);
 	}
 
 	public void showShipPlacementButtons(Graphics g) {
-		int x = 	(int) horizontal.getX();
+		int x = (int) horizontal.getX();
 		int y = (int) horizontal.getY();
 		int width = (int) horizontal.getWidth();
 		int height = (int) horizontal.getHeight();
-		
+
 		// Draw horizontal box
 		g.drawString("Orientation", 500, 492);
-		if (horizFlag) g.setColor(new Color(0xff8800));
-		else g.setColor(Color.WHITE);
+		if (horizFlag)
+			g.setColor(new Color(0xff8800));
+		else
+			g.setColor(Color.WHITE);
 		g.fillRect(x, y, width, height);
 		g.setColor(Color.BLACK);
 		g.drawRect(x, y, width, height);
-		g.drawString("Horizontal", x+6, y+24);
+		g.drawString("Horizontal", x + 6, y + 24);
 
 		// Draw horizontal box
 		y += 32;
-		if (!horizFlag) g.setColor(new Color(0xff8800));
-		else g.setColor(Color.WHITE);
+		if (!horizFlag)
+			g.setColor(new Color(0xff8800));
+		else
+			g.setColor(Color.WHITE);
 		g.fillRect(x, y, width, height);
 		g.setColor(Color.BLACK);
 		g.drawRect(x, y, width, height);
-		g.drawString("Vertical", x+20, y+24);
-		
+		g.drawString("Vertical", x + 20, y + 24);
+
 		x = (int) patrolRect.getX();
 		y = (int) patrolRect.getY();
 		width = (int) patrolRect.getWidth();
 		height = (int) patrolRect.getHeight();
-		
+
 		g.drawString("Ship Type", x, 492);
 		for (int i = 0; i < SHIP_NAMES.length; i++) {
-			if (shipSelected == i) g.setColor(new Color(0xff8800));
-			else g.setColor(Color.WHITE);
-			g.fillRect(x, y+32*i, width, height);
+			if (shipSelected == i)
+				g.setColor(new Color(0xff8800));
+			else
+				g.setColor(Color.WHITE);
+			g.fillRect(x, y + 32 * i, width, height);
 			g.setColor(Color.BLACK);
-			g.drawRect(x, y+32*i, width, height);
-			g.drawString(SHIP_NAMES[i], x+6, y+32*i+24);			
+			g.drawRect(x, y + 32 * i, width, height);
+			g.drawString(SHIP_NAMES[i], x + 6, y + 32 * i + 24);
 		}
-		
+
 		if (player[1].getGrid().getShips().size() == 5) {
 			g.setColor(Color.GREEN);
 			g.fillRect(startRect.x, startRect.y, startRect.width, startRect.height);
@@ -201,36 +218,34 @@ public class Display extends JFrame implements MouseListener {
 		Grid grid = player[playerNum].getGrid();
 		// y is the y coordinate in the grid
 		for (int y = 0; y <= player[playerNum].getGrid().getRows(); y++) {
-			g.drawLine(xOffset, GRID_Y_OFFSET + (y * (CELL_HEIGHT + 1)),
-					xOffset + grid.getColumns() * (CELL_WIDTH + 1), GRID_Y_OFFSET
-					+ (y * (CELL_HEIGHT + 1)));
+			g.drawLine(xOffset, GRID_Y_OFFSET + (y * (CELL_HEIGHT + 1)), xOffset + grid.getColumns() * (CELL_WIDTH + 1),
+					GRID_Y_OFFSET + (y * (CELL_HEIGHT + 1)));
 		}
 		// x is the x coordinate in the grid
 		for (int x = 0; x <= player[playerNum].getGrid().getColumns(); x++) {
-			g.drawLine(xOffset + (x * (CELL_WIDTH + 1)), GRID_Y_OFFSET,
-					xOffset + (x * (CELL_WIDTH + 1)), GRID_Y_OFFSET
-					+ grid.getRows() * (CELL_HEIGHT + 1));
+			g.drawLine(xOffset + (x * (CELL_WIDTH + 1)), GRID_Y_OFFSET, xOffset + (x * (CELL_WIDTH + 1)),
+					GRID_Y_OFFSET + grid.getRows() * (CELL_HEIGHT + 1));
 		}
 	}
+
 	public void drawRowLabels(Graphics g, int playerNum) {
 		int xOffset = (playerNum == 0) ? COMPUTER_X_OFFSET : HUMAN_X_OFFSET;
 		Grid grid = player[playerNum].getGrid();
 		for (int y = 0; y < grid.getRows(); y++) {
-			g.drawString("" + (char) (57-y),
-					xOffset + (CELL_WIDTH + 1) * grid.getColumns() + 12, 
-					GRID_Y_OFFSET + (y * (CELL_HEIGHT + 1) + CELL_HEIGHT/2) + g.getFont().getSize()/2);
+			g.drawString("" + (char) (57 - y), xOffset + (CELL_WIDTH + 1) * grid.getColumns() + 12,
+					GRID_Y_OFFSET + (y * (CELL_HEIGHT + 1) + CELL_HEIGHT / 2) + g.getFont().getSize() / 2);
 		}
 	}
-	
+
 	public void drawColumnLabels(Graphics g, int playerNum) {
 		int xOffset = (playerNum == 0) ? COMPUTER_X_OFFSET : HUMAN_X_OFFSET;
 		Grid grid = player[playerNum].getGrid();
 		for (int i = 0; i < grid.getColumns(); i++) {
-			g.drawString("" + (char) (i + 65),
-					xOffset + (i * (CELL_WIDTH + 1)) + CELL_WIDTH/2 - 6,
+			g.drawString("" + (char) (i + 65), xOffset + (i * (CELL_WIDTH + 1)) + CELL_WIDTH / 2 - 6,
 					GRID_Y_OFFSET + (CELL_HEIGHT + 1) * grid.getRows() + 28);
 		}
 	}
+
 	public void drawName(Graphics g, int playerNum) {
 		int xOffset = (playerNum == 0) ? COMPUTER_X_OFFSET : HUMAN_X_OFFSET;
 		int xNameOffset = xOffset + 128;
@@ -238,7 +253,7 @@ public class Display extends JFrame implements MouseListener {
 		String str = (playerNum == 0) ? "Computer" : "  Human  ";
 		g.drawString(str, xNameOffset, yNameOffset);
 	}
-	
+
 	public void drawShipStatus(Graphics g, int playerNum) {
 		ArrayList<Ship> deadShips = player[playerNum].getGrid().getDeadShips();
 		int xOffset = (playerNum == 0) ? COMPUTER_X_OFFSET : HUMAN_X_OFFSET;
@@ -246,16 +261,16 @@ public class Display extends JFrame implements MouseListener {
 		if (gameState == 1) {
 			g.drawString("Killed:", xOffset, yOffset);
 			if (deadShips.size() == 0) {
-				g.drawString("None", xOffset+28, yOffset+28);
+				g.drawString("None", xOffset + 28, yOffset + 28);
 			} else {
 				for (int y = 0; y < deadShips.size(); y++) {
-					g.drawString(deadShips.get(y).toString(), xOffset+28, yOffset+28*(y+1));
+					g.drawString(deadShips.get(y).toString(), xOffset + 28, yOffset + 28 * (y + 1));
 				}
 			}
-		} else {	
+		} else {
 			if (playerNum == 1) {
-//				vertical.repaint();
-//				horizontal.repaint();				
+				// vertical.repaint();
+				// horizontal.repaint();
 			}
 		}
 	}
@@ -270,27 +285,31 @@ public class Display extends JFrame implements MouseListener {
 
 		for (int x = 0; x < columns; x++) {
 			for (int y = 0; y < rows; y++) {
-				switch(grid.getFired(x, y)) {
-				case 0: c = Color.BLACK;
-				s = "";
-				break;
-				case 1: c = Color.RED;
-				s = "*";
-				break;
-				case 2: c = Color.GREEN;
-				s = "-";
-				break;
-				case 3: c = Color.GRAY;
-				s = getDeadShip(deadShips, x, y).displayChar();
-				break;
-				default: c = Color.BLUE; // unanticipated
-				s = "?";
-				break;
+				switch (grid.getFired(x, y)) {
+				case 0:
+					c = Color.BLACK;
+					s = "";
+					break;
+				case 1:
+					c = Color.RED;
+					s = "*";
+					break;
+				case 2:
+					c = Color.GREEN;
+					s = "-";
+					break;
+				case 3:
+					c = Color.GRAY;
+					s = getDeadShip(deadShips, x, y).displayChar();
+					break;
+				default:
+					c = Color.BLUE; // unanticipated
+					s = "?";
+					break;
 				}
 				g.setColor(c);
-				g.drawString(s,
-						COMPUTER_X_OFFSET + (x * (CELL_WIDTH + 1)) + CELL_WIDTH/2 - 6,
-						GRID_Y_OFFSET + (rows-1-y) * (CELL_HEIGHT + 1) + CELL_HEIGHT/2 + g.getFont().getSize()/2 - 4);
+				g.drawString(s, COMPUTER_X_OFFSET + (x * (CELL_WIDTH + 1)) + CELL_WIDTH / 2 - 6, GRID_Y_OFFSET
+						+ (rows - 1 - y) * (CELL_HEIGHT + 1) + CELL_HEIGHT / 2 + g.getFont().getSize() / 2 - 4);
 			}
 		}
 		g.setColor(Color.BLACK);
@@ -310,42 +329,46 @@ public class Display extends JFrame implements MouseListener {
 			Point ll = s.getLowerLeft();
 			for (int i = 0; i < s.length(); i++) {
 				if (s.getDirection()) { // horizontal
-					g.drawString(s.displayChar(),
-							xOffset + ((ll.getX()+i) * (CELL_WIDTH + 1)) + CELL_WIDTH/2 - 6,
-							GRID_Y_OFFSET + (rows-1-ll.getY()) * (CELL_HEIGHT + 1) + CELL_HEIGHT/2 + g.getFont().getSize()/2 - 6);
+					g.drawString(s.displayChar(), xOffset + ((ll.getX() + i) * (CELL_WIDTH + 1)) + CELL_WIDTH / 2 - 6,
+							GRID_Y_OFFSET + (rows - 1 - ll.getY()) * (CELL_HEIGHT + 1) + CELL_HEIGHT / 2
+									+ g.getFont().getSize() / 2 - 6);
 				} else {
-					g.drawString(s.displayChar(),
-							xOffset + (ll.getX() * (CELL_WIDTH + 1)) + CELL_WIDTH/2 - 6,
-							GRID_Y_OFFSET + (rows-1-ll.getY()-i) * (CELL_HEIGHT + 1) + CELL_HEIGHT/2 + g.getFont().getSize()/2 - 6);					
+					g.drawString(s.displayChar(), xOffset + (ll.getX() * (CELL_WIDTH + 1)) + CELL_WIDTH / 2 - 6,
+							GRID_Y_OFFSET + (rows - 1 - ll.getY() - i) * (CELL_HEIGHT + 1) + CELL_HEIGHT / 2
+									+ g.getFont().getSize() / 2 - 6);
 				}
 			}
 		}
-		
+
 		Color c;
 		String s;
 		for (int x = 0; x < columns; x++) {
 			for (int y = 0; y < rows; y++) {
-				switch(grid.getFired(x, y)) {
-				case 0: c = Color.BLACK;
-				s = "";
-				break;
-				case 1: c = Color.RED;
-				s = "*";
-				break;
-				case 2: c = Color.GREEN;
-				s = "-";
-				break;
-				case 3: c = Color.GRAY;
-				s = getDeadShip(deadShips, x, y).displayChar();
-				break;
-				default: c = Color.BLUE; // unanticipated
-				s = "?";
-				break;
+				switch (grid.getFired(x, y)) {
+				case 0:
+					c = Color.BLACK;
+					s = "";
+					break;
+				case 1:
+					c = Color.RED;
+					s = "*";
+					break;
+				case 2:
+					c = Color.GREEN;
+					s = "-";
+					break;
+				case 3:
+					c = Color.GRAY;
+					s = getDeadShip(deadShips, x, y).displayChar();
+					break;
+				default:
+					c = Color.BLUE; // unanticipated
+					s = "?";
+					break;
 				}
 				g.setColor(c);
-				g.drawString(s,
-						HUMAN_X_OFFSET + (x * (CELL_WIDTH + 1)) + CELL_WIDTH/2 - 6,
-						GRID_Y_OFFSET + (rows-1-y) * (CELL_HEIGHT + 1) + CELL_HEIGHT/2 + g.getFont().getSize()/2 - 4);
+				g.drawString(s, HUMAN_X_OFFSET + (x * (CELL_WIDTH + 1)) + CELL_WIDTH / 2 - 6, GRID_Y_OFFSET
+						+ (rows - 1 - y) * (CELL_HEIGHT + 1) + CELL_HEIGHT / 2 + g.getFont().getSize() / 2 - 4);
 			}
 		}
 		g.setColor(Color.BLACK);
@@ -373,11 +396,11 @@ public class Display extends JFrame implements MouseListener {
 		int y = scan.nextInt();
 		System.out.println("Please enter direction from end of the " + shipLabel + ".");
 		System.out.println("Use \"N\" for NORTH, \"E\" for EAST, \"S\" for SOUTH, \"W\" for WEST.");
-		//		char dir = scan.next().charAt(0);
+		// char dir = scan.next().charAt(0);
 		char d = scan.next().charAt(0);
 		boolean dir = (d == 'E' || d == 'e');
 
-		if (!(grid.addShip(shipLength, new Point(x,y), dir, "test"))) {  		
+		if (!(grid.addShip(shipLength, new Point(x, y), dir, "test"))) {
 			System.out.println("Illegal placement!  Try again!");
 			addToGrid(grid, s);
 		}
@@ -385,17 +408,22 @@ public class Display extends JFrame implements MouseListener {
 
 	// mouseClicked, mouseEntered, mouseExited all unused, but need to
 	// be present because of MouseListener interface
-	public void mouseClicked(MouseEvent arg0) { }
-	public void mouseEntered(MouseEvent arg0) {	}
-	public void mouseExited(MouseEvent arg0) { }
+	public void mouseClicked(MouseEvent arg0) {
+	}
 
-	public void mousePressed(MouseEvent arg0) { 
+	public void mouseEntered(MouseEvent arg0) {
+	}
+
+	public void mouseExited(MouseEvent arg0) {
+	}
+
+	public void mousePressed(MouseEvent arg0) {
 		int xOffset = (gameState == 0 ? HUMAN_X_OFFSET : COMPUTER_X_OFFSET);
 		int xCoord = arg0.getPoint().x;
 		int yCoord = arg0.getPoint().y;
 		xClicked = (xCoord - xOffset) / (CELL_WIDTH + 1);
 		yClicked = 9 - ((yCoord - GRID_Y_OFFSET) / (CELL_HEIGHT + 1));
-//		System.out.println("[" + xClicked + ", " + yClicked + "]");
+		// System.out.println("[" + xClicked + ", " + yClicked + "]");
 	}
 
 	public void mouseReleased(MouseEvent arg0) {
@@ -404,81 +432,202 @@ public class Display extends JFrame implements MouseListener {
 		int y = arg0.getPoint().y;
 		int xCoord = (x - xOffset) / (CELL_WIDTH + 1);
 		int yCoord = 9 - ((y - GRID_Y_OFFSET) / (CELL_HEIGHT + 1));
-		
+
 		if (gameState == 0) {
 			// Horizontal/Vertical boxes
-			if (horizFlag &&
-					Utilities.between(x, vertical.getMinX(), vertical.getMaxX()) &&
-					Utilities.between(y, vertical.getMinY(), vertical.getMaxY())) {
+			if (horizFlag && Utilities.between(x, vertical.getMinX(), vertical.getMaxX())
+					&& Utilities.between(y, vertical.getMinY(), vertical.getMaxY())) {
 				horizFlag = false;
-			} else if ((!horizFlag) &&
-					Utilities.between(x, horizontal.getMinX(), horizontal.getMaxX()) &&
-					Utilities.between(y, horizontal.getMinY(), horizontal.getMaxY())) {
+			} else if ((!horizFlag) && Utilities.between(x, horizontal.getMinX(), horizontal.getMaxX())
+					&& Utilities.between(y, horizontal.getMinY(), horizontal.getMaxY())) {
 				horizFlag = true;
-			// Ship type boxes
-			} else if (Utilities.between(x, patrolRect.getMinX(), patrolRect.getMaxX()) &&
-					Utilities.between(y, patrolRect.getMinY(), patrolRect.getMaxY()+128)) {
-				shipSelected = ((int) (y-patrolRect.getMinY())) / 32;
-			// Human playing grid boxes
-			} else if (Utilities.between(xCoord, 0, player[1].getGrid().getColumns()) &&
-					Utilities.between(yCoord, 0, player[1].getGrid().getRows())) {
-				System.out.println("[" + xCoord + ", " + yCoord + "]");
-				boolean addShip = player[1].getGrid().addShip(SHIP_LENGTHS[shipSelected], new Point(xCoord, yCoord), horizFlag, SHIP_NAMES[shipSelected]);
+				// Ship type boxes
+			} else if (Utilities.between(x, patrolRect.getMinX(), patrolRect.getMaxX())
+					&& Utilities.between(y, patrolRect.getMinY(), patrolRect.getMaxY() + 128)) {
+				shipSelected = ((int) (y - patrolRect.getMinY())) / 32;
+				// Human playing grid boxes
+			} else if (Utilities.between(xCoord, 0, player[1].getGrid().getColumns())
+					&& Utilities.between(yCoord, 0, player[1].getGrid().getRows())) {
+				// System.out.println("[" + xCoord + ", " + yCoord + "]");
+				boolean addShip = player[1].getGrid().addShip(SHIP_LENGTHS[shipSelected], new Point(xCoord, yCoord),
+						horizFlag, SHIP_NAMES[shipSelected]);
 				if (!addShip) {
-					JOptionPane.showMessageDialog(new JFrame(), "Cannot place a " + SHIP_NAMES[shipSelected] + " at " +
-							((char) (xCoord + 65)) + yCoord + (horizFlag ? " horizontally." : " vertically."));
+					JOptionPane.showMessageDialog(new JFrame(), "Cannot place a " + SHIP_NAMES[shipSelected] + " at "
+							+ ((char) (xCoord + 65)) + yCoord + (horizFlag ? " horizontally." : " vertically."));
 				}
-			// START button once ships have been placed
-			} else if (Utilities.between(x, startRect.getMinX(), startRect.getMaxX()) &&
-					Utilities.between(y, startRect.getMinY(), startRect.getMaxY()) &&
-					player[1].getGrid().areAllShipsPlaced()) {
+				// START button once ships have been placed
+			} else if (Utilities.between(x, startRect.getMinX(), startRect.getMaxX())
+					&& Utilities.between(y, startRect.getMinY(), startRect.getMaxY())
+					&& player[1].getGrid().areAllShipsPlaced()) {
 				gameState = 1;
 			}
-//			System.out.println("[" + x + ", " + y + "]");
-		} else {	 // gameState == 1 --> Human fires, then computer fires
-			System.out.println("[" + xCoord + ", " + yCoord + "]");
+			// System.out.println("[" + x + ", " + y + "]");
+		} else { // gameState == 1 --> Human fires, then computer fires
+			// System.out.println("[" + xCoord + ", " + yCoord + "]");
 			if (xCoord == xClicked && yCoord == yClicked) {
-				if (Utilities.between(xCoord, 0, player[1].getGrid().getColumns()) &&
-					Utilities.between(yCoord, 0, player[1].getGrid().getRows())) {
-						fireOnComputer(xCoord, yCoord);
-						fireOnHuman();
+				if (Utilities.between(xCoord, 0, player[1].getGrid().getColumns())
+						&& Utilities.between(yCoord, 0, player[1].getGrid().getRows())) {
+					fireOnComputer(xCoord, yCoord);
+					fireOnHuman();
 				}
 			}
 		}
 		repaint();
 	}
-	
+
 	// YOU NEED TO WRITE THIS
 	//
 	// Make sure that the grid confirms that the point (x, y) is
-	// on the grid.  If so, fire at it.  (Look at the Grid class
+	// on the grid. If so, fire at it. (Look at the Grid class
 	// to see what methods can help you do this.)
 	public void fireOnComputer(int xCoord, int yCoord) {
 		Grid grid = player[0].getGrid();
 		Point p = new Point(xCoord, yCoord);
 		// YOU WRITE CODE HERE
+		grid.fire(p);
 	}
 
 	// THIS IS THE MOST IMPORTANT PART OF YOUR GRADE ON THIS TEST!
 	//
 	// fireOnHuman() needs improvement. Your mission is to change
 	// it from randomly firing on the human's ships to firing in
-	// an intelligent pattern.  If a ship is hit, following up until
+	// an intelligent pattern. If a ship is hit, following up until
 	// that ship is destroyed is important to winning a game of
-	// Battleship.  If a ship is not hit, then firing at random
+	// Battleship. If a ship is not hit, then firing at random
 	// is not optimal; the computer can surely do better than that.
 	//
 	// You can do make whatever edits you need to fireOnHuman.
 	// You can add parameter(s) if you so desire.
+	
 	public void fireOnHuman() {
 		Grid grid = player[1].getGrid();
 		// CHANGE THE CODE BELOW TO MAKE THIS METHOD WORK
-		Point p = new Point((int) (Math.random()*grid.getColumns()), 
-				(int) (Math.random()*grid.getRows()));
-		if (grid.getFired(p.getX(),p.getY()) == 0) {
-			grid.fire(p);
+		Point p;
+		if (hit == 0) {
+			p = new Point((int) (Math.random() * grid.getColumns()), (int) (Math.random() * grid.getRows()));
 		} else {
-			fireOnHuman();
+			p = startingPosition; //decide which direction to go and check boundaries
 		}
-	}	
+		
+		int firedStatus = grid.getFired(p.getX(), p.getY());
+		
+		if (firedStatus == 0) { // if point not fired at yet
+			grid.fire(p); // fire
+			firedStatus = grid.getFired(p.getX(), p.getY());
+			System.out.println(firedStatus);
+			
+			if (firedStatus == 1) { //hit
+				hit++;
+				
+				System.out.println("Point 1: " + startingPosition);
+				Point savePoint = startingPosition;
+				switch(direction) {
+					case(0):
+						startingPosition = new Point(p.getX()+1, p.getY());
+						break;
+					case(1):
+						startingPosition = new Point(p.getX(), p.getY()-1);
+						break;
+					case(2):
+						startingPosition = new Point(p.getX()-1, p.getY());
+						break;
+					case(3):
+						startingPosition = new Point(p.getX(), p.getY()+1);
+						break;
+				}
+
+				if (!boundaryCheck(startingPosition)) {
+					startingPosition = savePoint;
+					System.out.println("Point 2: " + startingPosition);
+					goBeforeStartingPosition();
+				}
+			} else if (firedStatus == 2) { //miss
+				if (hit > 0) {
+					goBeforeStartingPosition();
+				}
+			} else if (firedStatus == 3) {
+				hit = 0;
+			}
+			
+			
+		} else if (firedStatus != 3) { // point was already fired at
+			fireOnHuman(); // fire at different another random point
+		}
+		
+	}
+
+	public boolean boundaryCheck(Point p) {
+		int x = p.getX();
+		int y = p.getY();
+		
+		if (x >= MIN_X && x <= MAX_X && y >= MIN_Y && y <= MAX_Y) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+//	public int returnDirection(Point p) {
+//		int x = p.getX();
+//		int y = p.getY();
+//		
+//		Point newPoint = new Point(x++, y);
+//		if (boundaryCheck(newPoint)) {
+//			
+//		}
+//	}
+	
+	public void goBeforeStartingPosition() {
+		int x = startingPosition.getX();
+		int y = startingPosition.getY();
+		
+		if (hit > 1) {
+			
+			switch(direction) {
+				case(0):
+					startingPosition = new Point(startingPosition.getX() - hit, y);
+					direction = 2;
+					break;
+				case(1):
+					startingPosition = new Point(x, startingPosition.getY() - hit);
+					direction = 3;
+					break;
+				case(2):
+					startingPosition = new Point(startingPosition.getX() + hit, y);
+					direction = 0;
+					break;
+				case(3):
+					startingPosition = new Point(x, startingPosition.getY() + hit);
+					direction = 1;
+					break;
+			}
+			
+			
+			System.out.println(startingPosition);
+		}
+	}
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

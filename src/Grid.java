@@ -77,7 +77,7 @@ public class Grid {
 			if (fired[p.getX()][p.getY()] == 0) {
 				fired[p.getX()][p.getY()] = 2;  // fired at, no ship
 			}
-			System.out.println("Whiff");
+//			System.out.println("Whiff"); COMMENTED OUT
 		}
 		s = null;
 	}
