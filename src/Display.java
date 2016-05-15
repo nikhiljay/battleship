@@ -50,6 +50,7 @@ public class Display extends JFrame implements MouseListener {
 	private int direction;
 	private int hit = 0;
 	private Point startingPosition;
+	private boolean runOnce = false;
 
 	public Display(int width, int height, Player[] player) {
 		DISPLAY_WIDTH = width; // Width, height initialized
@@ -502,59 +503,63 @@ public class Display extends JFrame implements MouseListener {
 	public void fireOnHuman() {
 		Grid grid = player[1].getGrid();
 		// CHANGE THE CODE BELOW TO MAKE THIS METHOD WORK
+		
 		Point p;
-		if (hit == 0) {
-			p = new Point((int) (Math.random() * grid.getColumns()), (int) (Math.random() * grid.getRows()));
-		} else {
-			p = startingPosition; //decide which direction to go and check boundaries
+		p = new Point((int) (Math.random() * grid.getColumns()), (int) (Math.random() * grid.getRows()));
+		if (hit > 0) {  // already had a previous hit
+		   p = startingPosition; //decide which direction to go and check boundaries
 		}
-		
+
 		int firedStatus = grid.getFired(p.getX(), p.getY());
-		
+
 		if (firedStatus == 0) { // if point not fired at yet
 			grid.fire(p); // fire
-			firedStatus = grid.getFired(p.getX(), p.getY());
-			System.out.println(firedStatus);
-			
-			if (firedStatus == 1) { //hit
+        }
+		
+		firedStatus = grid.getFired(p.getX(), p.getY());
+
+	    switch (firedStatus) {
+		    case (1): //hit
 				hit++;
-				
-				System.out.println("Point 1: " + startingPosition);
 				Point savePoint = startingPosition;
 				switch(direction) {
 					case(0):
 						startingPosition = new Point(p.getX()+1, p.getY());
 						break;
 					case(1):
-						startingPosition = new Point(p.getX(), p.getY()-1);
+						startingPosition = new Point(p.getX(), p.getY()+1);
 						break;
 					case(2):
 						startingPosition = new Point(p.getX()-1, p.getY());
 						break;
 					case(3):
-						startingPosition = new Point(p.getX(), p.getY()+1);
+						startingPosition = new Point(p.getX(), p.getY()-1);
 						break;
 				}
 
 				if (!boundaryCheck(startingPosition)) {
 					startingPosition = savePoint;
-					System.out.println("Point 2: " + startingPosition);
 					goBeforeStartingPosition();
 				}
-			} else if (firedStatus == 2) { //miss
+				break;
+            case (2):// missed
 				if (hit > 0) {
 					goBeforeStartingPosition();
+				} else {
+				   fireOnHuman(); // fire at different another random point
 				}
-			} else if (firedStatus == 3) {
+            	break;
+			case (3):
 				hit = 0;
-			}
-			
-			
-		} else if (firedStatus != 3) { // point was already fired at
-			fireOnHuman(); // fire at different another random point
+				direction = 0;
+                break;
+	    }
+
+	    if (grid.gameOver()) {
+			System.out.println("end game now");
 		}
-		
 	}
+
 
 	public boolean boundaryCheck(Point p) {
 		int x = p.getX();
@@ -567,41 +572,30 @@ public class Display extends JFrame implements MouseListener {
 		return false;
 	}
 	
-//	public int returnDirection(Point p) {
-//		int x = p.getX();
-//		int y = p.getY();
-//		
-//		Point newPoint = new Point(x++, y);
-//		if (boundaryCheck(newPoint)) {
-//			
-//		}
-//	}
-	
 	public void goBeforeStartingPosition() {
 		int x = startingPosition.getX();
 		int y = startingPosition.getY();
 		
-		if (hit > 1) {
-			
+		if (hit > 0) {
+			System.out.println("Go before starting point");
 			switch(direction) {
 				case(0):
-					startingPosition = new Point(startingPosition.getX() - hit, y);
+					startingPosition = new Point(x - (hit + 1), y);
 					direction = 2;
 					break;
 				case(1):
-					startingPosition = new Point(x, startingPosition.getY() - hit);
-					direction = 3;
-					break;
-				case(2):
-					startingPosition = new Point(startingPosition.getX() + hit, y);
+					startingPosition = new Point(x, y-1);
 					direction = 0;
 					break;
+				case(2):
+					startingPosition = new Point(x+1, y-1);
+					direction = 3;
+					break;
 				case(3):
-					startingPosition = new Point(x, startingPosition.getY() + hit);
+					startingPosition = new Point(x, y + (hit + 1));
 					direction = 1;
 					break;
 			}
-			
 			
 			System.out.println(startingPosition);
 		}
