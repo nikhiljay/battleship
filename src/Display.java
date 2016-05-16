@@ -50,7 +50,7 @@ public class Display extends JFrame implements MouseListener {
 	private int direction;
 	private int hit = 0;
 	private Point startingPosition;
-	private boolean runOnce = false;
+	private int[][] previousHits = new int[MAX_X][MAX_Y];
 
 	public Display(int width, int height, Player[] player) {
 		DISPLAY_WIDTH = width; // Width, height initialized
@@ -63,6 +63,12 @@ public class Display extends JFrame implements MouseListener {
 		setSize(DISPLAY_WIDTH, DISPLAY_HEIGHT);
 		initPlayers();
 		addMouseListener(this);
+		
+		for (int i = 0; i < previousHits.length; i++) {
+			for (int j = 0; j < previousHits[0].length; j++) {
+				previousHits[i][j] = 0;
+			}
+		}
 	}
 
 	public void initPlayers() {
@@ -142,6 +148,8 @@ public class Display extends JFrame implements MouseListener {
 		showBoard(gr, 1);
 		if (gameState == 0) {
 			showShipPlacementButtons(gr);
+		} else if (gameState == 3) {
+			showGameOver(gr);
 		}
 		super.paint(g);
 		g.drawImage(image, 0, 0, null);
@@ -203,7 +211,17 @@ public class Display extends JFrame implements MouseListener {
 			setFont(f);
 		}
 	}
-
+	
+	public void showGameOver(Graphics g) {
+		int width = (int) horizontal.getWidth();
+		int height = (int) horizontal.getHeight();
+		
+		Font f1 = new Font("Monospaced", Font.BOLD, 48);
+		g.setFont(f1);
+		g.setColor(Color.RED);
+		g.drawString("GAME OVER!", 350, 350);
+	}
+	
 	public void showBoard(Graphics g, int playerNum) {
 		drawGrid(g, playerNum);
 		drawRowLabels(g, playerNum);
@@ -463,13 +481,16 @@ public class Display extends JFrame implements MouseListener {
 				gameState = 1;
 			}
 			// System.out.println("[" + x + ", " + y + "]");
-		} else { // gameState == 1 --> Human fires, then computer fires
+		} else if (gameState == 1) { // gameState == 1 --> Human fires, then computer fires
 			// System.out.println("[" + xCoord + ", " + yCoord + "]");
 			if (xCoord == xClicked && yCoord == yClicked) {
 				if (Utilities.between(xCoord, 0, player[1].getGrid().getColumns())
 						&& Utilities.between(yCoord, 0, player[1].getGrid().getRows())) {
-					fireOnComputer(xCoord, yCoord);
-					fireOnHuman();
+					Grid grid = player[0].getGrid();
+					if (grid.getFired(xCoord, yCoord) == 0) {
+						fireOnComputer(xCoord, yCoord);
+						fireOnHuman();
+					}
 				}
 			}
 		}
@@ -485,7 +506,9 @@ public class Display extends JFrame implements MouseListener {
 		Grid grid = player[0].getGrid();
 		Point p = new Point(xCoord, yCoord);
 		// YOU WRITE CODE HERE
+		
 		grid.fire(p);
+
 	}
 
 	// THIS IS THE MOST IMPORTANT PART OF YOUR GRADE ON THIS TEST!
@@ -510,30 +533,46 @@ public class Display extends JFrame implements MouseListener {
 		   p = startingPosition; //decide which direction to go and check boundaries
 		}
 
-		int firedStatus = grid.getFired(p.getX(), p.getY());
-
+		int firedStatus = getFiredStatus(p);
+		
 		if (firedStatus == 0) { // if point not fired at yet
 			grid.fire(p); // fire
-        }
+		} else  {
+			while (firedStatus > 1) {
+				p = new Point((int) (Math.random() * grid.getColumns()), (int) (Math.random() * grid.getRows()));
+				firedStatus = getFiredStatus(p);
+			}
+		}
+		firedStatus = getFiredStatus(p);
 		
-		firedStatus = grid.getFired(p.getX(), p.getY());
-
-	    switch (firedStatus) {
-		    case (1): //hit
+	    switch(firedStatus) {
+		    case(1): //hit
 				hit++;
 				Point savePoint = startingPosition;
 				switch(direction) {
 					case(0):
 						startingPosition = new Point(p.getX()+1, p.getY());
+						if (getFiredStatus(startingPosition) > 1) {
+							goBeforeStartingPosition();
+						}
 						break;
 					case(1):
 						startingPosition = new Point(p.getX(), p.getY()+1);
+						if (getFiredStatus(startingPosition) > 1) {
+							goBeforeStartingPosition();
+						}
 						break;
 					case(2):
 						startingPosition = new Point(p.getX()-1, p.getY());
+						if (getFiredStatus(startingPosition) > 1) {
+							goBeforeStartingPosition();
+						}
 						break;
 					case(3):
 						startingPosition = new Point(p.getX(), p.getY()-1);
+						if (getFiredStatus(startingPosition) > 1) {
+							goBeforeStartingPosition();
+						}
 						break;
 				}
 
@@ -542,24 +581,28 @@ public class Display extends JFrame implements MouseListener {
 					goBeforeStartingPosition();
 				}
 				break;
-            case (2):// missed
+            case(2):// missed
 				if (hit > 0) {
 					goBeforeStartingPosition();
-				} else {
-				   fireOnHuman(); // fire at different another random point
 				}
             	break;
-			case (3):
+			case(3):
 				hit = 0;
 				direction = 0;
                 break;
+            default:
+            	fireOnHuman();
 	    }
 
 	    if (grid.gameOver()) {
-			System.out.println("end game now");
+			gameState = 3;
 		}
 	}
 
+	public int getFiredStatus(Point p) {
+		Grid grid = player[1].getGrid();
+		return grid.getFired(p.getX(), p.getY());
+	}
 
 	public boolean boundaryCheck(Point p) {
 		int x = p.getX();
@@ -575,16 +618,16 @@ public class Display extends JFrame implements MouseListener {
 	public void goBeforeStartingPosition() {
 		int x = startingPosition.getX();
 		int y = startingPosition.getY();
+		Point savePoint = startingPosition;
 		
 		if (hit > 0) {
-			System.out.println("Go before starting point");
 			switch(direction) {
 				case(0):
 					startingPosition = new Point(x - (hit + 1), y);
 					direction = 2;
 					break;
 				case(1):
-					startingPosition = new Point(x, y-1);
+					startingPosition = new Point(x+1, y-1);
 					direction = 0;
 					break;
 				case(2):
@@ -596,8 +639,25 @@ public class Display extends JFrame implements MouseListener {
 					direction = 1;
 					break;
 			}
-			
-			System.out.println(startingPosition);
+
+			//fix boundaries
+			if (!boundaryCheck(startingPosition)) {
+				if (startingPosition.getX() > MAX_X) {
+					startingPosition = new Point(MAX_X, y);
+				}
+				
+				if (startingPosition.getY() > MAX_Y) {
+					startingPosition = new Point(x, MAX_Y);
+				}
+				
+				if (startingPosition.getX() < MIN_X) {
+					startingPosition = new Point(MIN_X, y);
+				}
+				
+				if (startingPosition.getY() < MIN_Y) {
+					startingPosition = new Point(x, MIN_Y);
+				}
+			}
 		}
 	}
 	
